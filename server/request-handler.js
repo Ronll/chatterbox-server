@@ -11,7 +11,9 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
-var _storage = {};
+var _storage = [];
+var fs = require('fs');
+
 exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -27,6 +29,13 @@ exports.requestHandler = function(request, response) {
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
 
+    if(request.method === 'OPTIONS') {
+        var headers = defaultCorsHeaders;
+        var statusCode = 200;
+        response.writeHead(statusCode, headers);
+        response.end();
+    }
+
     if(request.method === 'GET'){
         if(request.url.slice(0,8) === '/classes'){
             console.log("Serving request type " + request.method + " for url " + request.url);
@@ -34,29 +43,114 @@ exports.requestHandler = function(request, response) {
             var headers = defaultCorsHeaders;
             headers['Content-Type'] = "application/json";
             response.writeHead(statusCode, headers);
+            console.log('reponse',JSON.stringify({ results: _storage }) )
             response.end(
-                JSON.stringify({
-                    "results":
-                        [ {"room": "1"},
-                            {"room": "2"} ]
-                })
+                JSON.stringify({ results: _storage })
             );
+        }else if(request.url === '/'){
+            //serve the front end app
+            console.log("Serving request type " + request.method + " for url " + request.url);
+            var statusCode = 200;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "text/html";
+            response.writeHead(statusCode, headers);
+            fs.readFile('/Users/student/Ron/2015-11-chatterbox-server/server/index.html','utf8', function (err, html) {
+                console.log('error', err);
+                console.log(html);
+                response.write(html);
+                response.end();
+            });
+        }else if(request.url === '/app.js') {
+            console.log("Serving request type " + request.method + " for url " + request.url);
+            var statusCode = 200;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "application/javascript";
+            response.writeHead(statusCode, headers);
+            fs.readFile('/Users/student/Ron/2015-11-chatterbox-server/client/client/scripts/app.js','utf8', function (err, js) {
+                console.log('error', err);
+                console.log(js);
+                response.write(js);
+                response.end();
+            });
+        }else if(request.url === '/config.js') {
+            console.log("Serving request type " + request.method + " for url " + request.url);
+            var statusCode = 200;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "application/javascript";
+            response.writeHead(statusCode, headers);
+            fs.readFile('/Users/student/Ron/2015-11-chatterbox-server/client/client/env/config.js','utf8', function (err, js) {
+                console.log('error', err);
+                console.log(js);
+                response.write(js);
+                response.end();
+            });
+        }else if(request.url === '/styles.css') {
+            console.log("Serving request type " + request.method + " for url " + request.url);
+            var statusCode = 200;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "text/css";
+            response.writeHead(statusCode, headers);
+            fs.readFile('/Users/student/Ron/2015-11-chatterbox-server/client/client/styles/styles.css','utf8', function (err, css) {
+                console.log('error', err);
+                console.log(css);
+                response.write(css);
+                response.end();
+            });
+        }else if(request.url === '/styles.css') {
+            console.log("Serving request type " + request.method + " for url " + request.url);
+            var statusCode = 200;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "image/gif";
+            response.writeHead(statusCode, headers);
+            fs.readFile('/Users/student/Ron/2015-11-chatterbox-server/client/client/images/spiffygif_46x46', function (err, gif) {
+                console.log('error', err);
+                console.log(gif);
+                response.write(gif);
+                response.end();
+        });
+        }else{
+            console.log(request.url), 'url';
+            var statusCode = 404;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "text/plain";
+            response.writeHead(statusCode, headers);
+            response.end(JSON.stringify('not ok'));
         }
     }
+
+
 
     if(request.method === 'POST'){
         if(request.url.slice(0,8) === '/classes' ){
             console.log("Serving request type " + request.method + " for url " + request.url);
-            _storage[request.url.slice(10,-1)] = requesthttp.IncomingMessage
+            var body = [];
+
+            request.on('data', function(chunk) {
+                body.push(chunk);
+            });
+
+            request.on('end', function() {
+                body = Buffer.concat(body).toString();
+                _storage.push(JSON.parse(body));
+            });
+
+
+            //response
             var statusCode = 201;
             var headers = defaultCorsHeaders;
             headers['Content-Type'] = "text/plain";
             response.writeHead(statusCode, headers);
-            response.end(
-                JSON.stringify('ok')
-            );
+            response.end(JSON.stringify('ok'));
+        }else{
+            var statusCode = 404;
+            var headers = defaultCorsHeaders;
+            headers['Content-Type'] = "text/plain";
+            response.writeHead(statusCode, headers);
+            response.end(JSON.stringify('not ok'));
         }
     }
+
+
   // The outgoing status.
   //var statusCode = 200;
 
@@ -96,6 +190,6 @@ var defaultCorsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
   "access-control-allow-headers": "content-type, accept",
-  "access-control-max-age": 10 // Seconds.
+  "access-control-max-age": 2 // Seconds.
 };
 
